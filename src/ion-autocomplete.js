@@ -43,6 +43,7 @@ angular.module('ion-autocomplete', []).directive('ionAutocomplete', [
                 scope.items = [];
                 scope.selectedItems = [];
                 scope.searchQuery = undefined;
+                scope.mapSelectedItems = {};
 
                 // returns the value of an item
                 scope.getItemValue = function (item, key) {
@@ -109,16 +110,20 @@ angular.module('ion-autocomplete', []).directive('ionAutocomplete', [
                     compiledTemplate.scope.selectItem = function (item) {
 
                         // clear the items and the search query
-                        compiledTemplate.scope.items = [];
+                        // compiledTemplate.scope.items = [];
                         compiledTemplate.scope.searchQuery = undefined;
 
                         // if multiple select is on store the selected items
                         if (compiledTemplate.scope.multipleSelect === "true") {
 
-                            if (!isKeyValueInObjectArray(compiledTemplate.scope.selectedItems,
-                                    compiledTemplate.scope.itemValueKey, scope.getItemValue(item, scope.itemValueKey))) {
-                                // create a new array to update the model. See https://github.com/angular-ui/ui-select/issues/191#issuecomment-55471732
-                                compiledTemplate.scope.selectedItems = compiledTemplate.scope.selectedItems.concat([item]);
+                            if (!compiledTemplate.scope.mapSelectedItems[scope.getItemValue(item, scope.itemValueKey)]){
+                              compiledTemplate.scope.mapSelectedItems[scope.getItemValue(item, scope.itemValueKey)] = item;
+
+                              compiledTemplate.scope.selectedItems = compiledTemplate.scope.selectedItems.concat([item]);
+                              // if (!isKeyValueInObjectArray(compiledTemplate.scope.selectedItems,
+                              //   compiledTemplate.scope.itemValueKey, scope.getItemValue(item, scope.itemValueKey))) {
+                              //     // create a new array to update the model. See https://github.com/angular-ui/ui-select/issues/191#issuecomment-55471732
+                              //   }
                             }
 
                             // set the view value and render it
