@@ -1,7 +1,7 @@
 /*
  * ion-autocomplete 0.2.3
- * Copyright 2015 Danny Povolotski 
- * Copyright modifications 2015 Guy Brand 
+ * Copyright 2017 Danny Povolotski 
+ * Copyright modifications 2017 Guy Brand 
  * https://github.com/guylabs/ion-autocomplete
  */
 (function() {
@@ -186,49 +186,48 @@ angular.module('ion-autocomplete', []).directive('ionAutocomplete', [
                             return;
                         }
 
-                        // if the search query is empty, clear the items
-                        if (query == '') {
-                            compiledTemplate.scope.items = [];
-                        }
-
-                        if (angular.isFunction(compiledTemplate.scope.itemsMethod)) {
-
-                            // show the loading icon
-                            compiledTemplate.scope.showLoadingIcon = true;
-
-                            var queryObject = {query: query};
-
-                            // if the component id is set, then add it to the query object
-                            if (compiledTemplate.scope.componentId) {
-                                queryObject = {query: query, componentId: compiledTemplate.scope.componentId}
-                            }
-
-                            // convert the given function to a $q promise to support promises too
-                            var promise = $q.when(compiledTemplate.scope.itemsMethod(queryObject));
-
-                            promise.then(function (promiseData) {
-
-                                // if the given promise data object has a data property use this for the further processing as the
-                                // standard httpPromises from the $http functions store the response data in a data property
-                                if (promiseData && promiseData.data) {
-                                    promiseData = promiseData.data;
-                                }
-
-                                // set the items which are returned by the items method
-                                compiledTemplate.scope.items = compiledTemplate.scope.getItemValue(promiseData,
-                                    compiledTemplate.scope.itemsMethodValueKey);
-
-                                // force the collection repeat to redraw itself as there were issues when the first items were added
-                                $ionicScrollDelegate.resize();
-
-                                // hide the loading icon
-                                compiledTemplate.scope.showLoadingIcon = false;
-                            }, function (error) {
-                                // reject the error because we do not handle the error here
-                                return $q.reject(error);
-                            });
-                        }
+                        handleQuery(query);
                     });
+
+                    var handleQuery = function (query) {
+                      if (angular.isFunction(compiledTemplate.scope.itemsMethod)) {
+
+                          // show the loading icon
+                          compiledTemplate.scope.showLoadingIcon = true;
+
+                          var queryObject = {query: query};
+
+                          // if the component id is set, then add it to the query object
+                          if (compiledTemplate.scope.componentId) {
+                              queryObject = {query: query, componentId: compiledTemplate.scope.componentId}
+                          }
+
+                          // convert the given function to a $q promise to support promises too
+                          var promise = $q.when(compiledTemplate.scope.itemsMethod(queryObject));
+
+                          promise.then(function (promiseData) {
+
+                              // if the given promise data object has a data property use this for the further processing as the
+                              // standard httpPromises from the $http functions store the response data in a data property
+                              if (promiseData && promiseData.data) {
+                                  promiseData = promiseData.data;
+                              }
+
+                              // set the items which are returned by the items method
+                              compiledTemplate.scope.items = compiledTemplate.scope.getItemValue(promiseData,
+                                  compiledTemplate.scope.itemsMethodValueKey);
+
+                              // force the collection repeat to redraw itself as there were issues when the first items were added
+                              $ionicScrollDelegate.resize();
+
+                              // hide the loading icon
+                              compiledTemplate.scope.showLoadingIcon = false;
+                          }, function (error) {
+                              // reject the error because we do not handle the error here
+                              return $q.reject(error);
+                          });
+                      }
+                    };
 
                     var displaySearchContainer = function () {
                         $ionicBackdrop.retain();
@@ -296,8 +295,7 @@ angular.module('ion-autocomplete', []).directive('ionAutocomplete', [
                             }, 0);
                         }
 
-                        // force the collection repeat to redraw itself as there were issues when the first items were added
-                        $ionicScrollDelegate.resize();
+                        handleQuery('');
                     };
 
                     var isKeyValueInObjectArray = function (objectArray, key, value) {
