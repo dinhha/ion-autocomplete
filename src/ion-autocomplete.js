@@ -275,6 +275,8 @@ angular.module('ion-autocomplete', []).directive('ionAutocomplete', [
                             return;
                         }
 
+                        compiledTemplate.scope.mapSelectedItems = {};
+
                         // prevent the default event and the propagation
                         event.preventDefault();
                         event.stopPropagation();
