@@ -31,7 +31,10 @@ angular.module('ion-autocomplete', []).directive('ionAutocomplete', [
                 itemsRemovedMethod: '&',
                 componentId: '@',
                 modelToItemMethod: '&',
-                loadingIcon: '@'
+                loadingIcon: '@',
+                maxSelectedItems: '@',
+                externalSelectedItems: '=?',
+                cancelButtonClickedMethod: '&'
             },
             link: function (scope, element, attrs, ngModel) {
 
@@ -45,6 +48,7 @@ angular.module('ion-autocomplete', []).directive('ionAutocomplete', [
                 scope.selectedItemsLabel = !scope.selectedItemsLabel ? 'Selected items:' : scope.selectedItemsLabel;
                 scope.templateUrl = !scope.templateUrl ? '' : scope.templateUrl;
                 scope.loadingIcon = !scope.loadingIcon ? '' : scope.loadingIcon;
+                scope.maxSelectedItems = scope.maxSelectedItems ? parseInt(scope.maxSelectedItems) : 1000;
 
                 // loading flag if the items-method is a function
                 scope.showLoadingIcon = false;
@@ -127,13 +131,19 @@ angular.module('ion-autocomplete', []).directive('ionAutocomplete', [
                         if (compiledTemplate.scope.multipleSelect === "true") {
 
                             if (!compiledTemplate.scope.mapSelectedItems[scope.getItemValue(item, scope.itemValueKey)]){
-                              compiledTemplate.scope.mapSelectedItems[scope.getItemValue(item, scope.itemValueKey)] = item;
+                              if (compiledTemplate.scope.selectedItems.length >= scope.maxSelectedItems){
+                                return;
+                              }
 
+                              compiledTemplate.scope.mapSelectedItems[scope.getItemValue(item, scope.itemValueKey)] = item;
                               compiledTemplate.scope.selectedItems = compiledTemplate.scope.selectedItems.concat([item]);
                               // if (!isKeyValueInObjectArray(compiledTemplate.scope.selectedItems,
                               //   compiledTemplate.scope.itemValueKey, scope.getItemValue(item, scope.itemValueKey))) {
                               //     // create a new array to update the model. See https://github.com/angular-ui/ui-select/issues/191#issuecomment-55471732
                               //   }
+                            }else{
+                              compiledTemplate.scope.removeItem(item);
+                              return;
                             }
 
                             // set the view value and render it
@@ -161,11 +171,17 @@ angular.module('ion-autocomplete', []).directive('ionAutocomplete', [
                     };
 
                     // function which removes the item from the selected items.
-                    compiledTemplate.scope.removeItem = function (index) {
+                    compiledTemplate.scope.removeItem = function (item) {
                         // remove the item from the selected items and create a copy of the array to update the model.
                         // See https://github.com/angular-ui/ui-select/issues/191#issuecomment-55471732
-                        var removed = compiledTemplate.scope.selectedItems.splice(index, 1)[0];
+                        compiledTemplate.scope.selectedItems.forEach(function (sItem, index) {
+                          if (scope.getItemValue(sItem, scope.itemValueKey) == scope.getItemValue(item, scope.itemValueKey)){
+                            compiledTemplate.scope.selectedItems.splice(index, 0);
+                          }
+                        });
+
                         compiledTemplate.scope.selectedItems = compiledTemplate.scope.selectedItems.slice();
+                        compiledTemplate.scope.mapSelectedItems[scope.getItemValue(item, scope.itemValueKey)] = undefined;
 
                         // set the view value and render it
                         ngModel.$setViewValue(compiledTemplate.scope.selectedItems);
@@ -175,7 +191,7 @@ angular.module('ion-autocomplete', []).directive('ionAutocomplete', [
                         if (angular.isFunction(compiledTemplate.scope.itemsRemovedMethod)) {
                             compiledTemplate.scope.itemsRemovedMethod({
                                 callback: {
-                                    item: removed,
+                                    item: item,
                                     selectedItems: compiledTemplate.scope.selectedItems.slice(),
                                     componentId: compiledTemplate.scope.componentId
                                 }
@@ -285,7 +301,7 @@ angular.module('ion-autocomplete', []).directive('ionAutocomplete', [
                             return;
                         }
 
-                        compiledTemplate.scope.mapSelectedItems = {};
+                        // compiledTemplate.scope.mapSelectedItems = {};
 
                         // prevent the default event and the propagation
                         event.preventDefault();
@@ -338,6 +354,14 @@ angular.module('ion-autocomplete', []).directive('ionAutocomplete', [
                     compiledTemplate.element.find('button').bind('click', function (event) {
                         compiledTemplate.scope.searchQuery = undefined;
                         hideSearchContainer();
+                        if (angular.isFunction(compiledTemplate.scope.cancelButtonClickedMethod)) {
+                            compiledTemplate.scope.cancelButtonClickedMethod({
+                                callback: {
+                                    selectedItems: compiledTemplate.scope.selectedItems.slice(),
+                                    componentId: compiledTemplate.scope.componentId
+                                }
+                            });
+                        }
                     });
 
                     // prepopulate view and selected items if model is already set
@@ -350,6 +374,16 @@ angular.module('ion-autocomplete', []).directive('ionAutocomplete', [
                             resolveAndSelectModelItem(compiledTemplate.scope.model);
                         }
                     }
+
+                    scope.$watchCollection('externalSelectedItems', function (newVal, oldVal) {
+                      if (newVal && oldVal && newVal.length < oldVal.length){
+                        compiledTemplate.scope.selectedItems = newVal.slice();
+                        compiledTemplate.scope.mapSelectedItems = {};
+                        newVal.forEach(function (item) {
+                          compiledTemplate.scope.mapSelectedItems[scope.getItemValue(item, scope.itemValueKey)] = item;
+                        })
+                      }
+                    });
 
                 });
 
