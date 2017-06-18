@@ -184,8 +184,8 @@ angular.module('ion-autocomplete', []).directive('ionAutocomplete', [
                         compiledTemplate.scope.mapSelectedItems[scope.getItemValue(item, scope.itemValueKey)] = undefined;
 
                         // set the view value and render it
-                        ngModel.$setViewValue(compiledTemplate.scope.selectedItems);
-                        ngModel.$render();
+                        // ngModel.$setViewValue(compiledTemplate.scope.selectedItems);
+                        // ngModel.$render();
 
                         // call items clicked callback
                         if (angular.isFunction(compiledTemplate.scope.itemsRemovedMethod)) {
@@ -376,7 +376,7 @@ angular.module('ion-autocomplete', []).directive('ionAutocomplete', [
                     }
 
                     scope.$watchCollection('externalSelectedItems', function (newVal, oldVal) {
-                      if (newVal && oldVal && newVal.length < oldVal.length){
+                      if (newVal){
                         compiledTemplate.scope.selectedItems = newVal.slice();
                         compiledTemplate.scope.mapSelectedItems = {};
                         newVal.forEach(function (item) {
